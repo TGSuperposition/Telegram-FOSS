@@ -3,10 +3,11 @@
 #fail on error
 set -e
 
-pkgnames=(   libwebp openssl )
-pkgvers=(    0.4.2   1.0.2m )
-extensions=( tar.gz  tar.gz )
-link=( "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/" "https://www.openssl.org/source/")
+pkgnames=(   libwebp openssl sqlite-autoconf )
+pkgvers=(    0.4.2   1.0.2m  3210000 )
+extensions=( tar.gz  tar.gz  tar.gz )
+link=( "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/" "https://www.openssl.org/source/" "https://sqlite.org/2017/" )
+shasum=( skip skip d7dd516775005ad87a57f428b6f86afd206cb341722927f104d3f0cf65fbbbe3 )
 nopackages=${#pkgnames[@]}
 
 OPTIND=1
@@ -62,12 +63,16 @@ function download () {
 }
 
 function verify () {
-  echo "Verifying 3rdParty/download/$1 with gpg signature."
-  gpg --homedir "$g" --verify "3rdParty/download/$1.sig" 2> /dev/null || gpg --homedir "$g" --verify "3rdParty/download/$1.asc" 2> /dev/null || die "INVALID Signature! Download corrupted? Has the signing key changed?"
+  echo "Verifying 3rdParty/download/$1"
+  gpg --homedir "$g" --verify "3rdParty/download/$1.sig" 2> /dev/null \
+    || gpg --homedir "$g" --verify "3rdParty/download/$1.asc" 2> /dev/null \
+    || if [ "$2" == "skip" ]; then true; else echo -e "$2\t3rdParty/download/$1" | sha256sum -c -; fi \
+    || die "INVALID signature/hash! Download corrupted? Has the signing key changed?"
 }
 
 function extract () {
   echo "Extracting 3rdParty/download/$1 into $2"
+  rm -rf "$2"
   mkdir -p "$2"
   tar xf "3rdParty/download/$1" -C "$2" --strip-components=1
 }
@@ -104,6 +109,13 @@ function handle_openssl () {
   popd > /dev/null
 }
 
+function handle_sqlite () {
+  echo "Preparing sqlite sources in TMessagesProj/jni/sqlite"
+  pushd 3rdParty/unpacked/sqlite-autoconf > /dev/null
+  cp sqlite3.c sqlite3.h ../../../TMessagesProj/jni/sqlite
+  popd > /dev/null
+}
+
 chdir
 if [ $clean = 1 ]; then
   clean
@@ -116,10 +128,11 @@ else
   do
     filename="${pkgnames[$i]}-${pkgvers[$i]}.${extensions[$i]}"
     download "${link[$i]}" "$filename"
-    verify "$filename"
-    extract $filename 3rdParty/unpacked/${pkgnames[i]}
+    verify "$filename" "${shasum[$i]}"
+    extract "$filename" 3rdParty/unpacked/"${pkgnames[i]}"
   done
   handle_libwebp
   handle_openssl
+  handle_sqlite
 fi
 popd > /dev/null
