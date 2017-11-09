@@ -3,10 +3,10 @@
 #fail on error
 set -e
 
-pkgnames=(   libwebp )
-pkgvers=(    0.4.2   )
-extensions=( tar.gz  )
-link=( "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/" )
+pkgnames=(   libwebp openssl )
+pkgvers=(    0.4.2   1.0.2m )
+extensions=( tar.gz  tar.gz )
+link=( "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/" "https://www.openssl.org/source/")
 nopackages=${#pkgnames[@]}
 
 OPTIND=1
@@ -96,6 +96,14 @@ function handle_libwebp () {
   find TMessagesProj/jni/libwebp/ -name '*.am' -delete
 }
 
+function handle_openssl () {
+  echo "Preparing openssl source tree in TMessagesProj/jni/openssl/"
+  rm -rf TMessagesProj/jni/openssl/crypto
+  pushd 3rdParty/unpacked/openssl > /dev/null
+  cp -r crypto CHANGES e_os2.h e_os.h LICENSE README ../../../TMessagesProj/jni/openssl
+  popd > /dev/null
+}
+
 chdir
 if [ $clean = 1 ]; then
   clean
@@ -112,5 +120,6 @@ else
     extract $filename 3rdParty/unpacked/${pkgnames[i]}
   done
   handle_libwebp
+  handle_openssl
 fi
 popd > /dev/null
