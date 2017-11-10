@@ -4,7 +4,7 @@
 set -e
 
 pkgnames=(   libwebp openssl sqlite-autoconf ffmpeg )
-pkgvers=(    0.4.2   1.0.2m  3210000         3.0 )
+pkgvers=(    0.6.0   1.0.2m  3210000         3.0 )
 extensions=( tar.gz  tar.gz  tar.gz          tar.xz )
 shasum=(     skip    skip    d7dd516775005ad87a57f428b6f86afd206cb341722927f104d3f0cf65fbbbe3 skip )
 link=(       "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/" "https://www.openssl.org/source/" "https://sqlite.org/2017/" "https://ffmpeg.org/releases/" )
@@ -96,14 +96,7 @@ function clean () {
 function handle_libwebp () {
   echo "Preparing libwebp source tree in TMessagesProj/jni/libwebp/"
   rm -rf TMessagesProj/jni/libwebp/
-  mkdir TMessagesProj/jni/libwebp/
-  pushd 3rdParty/unpacked/libwebp/src > /dev/null
-  cp -r dec/ dsp/ enc/ utils/ webp/ ../../../../TMessagesProj/jni/libwebp/
-  cd ..
-  cp AUTHORS ChangeLog COPYING NEWS PATENTS ../../../TMessagesProj/jni/libwebp/
-  popd > /dev/null
-  find TMessagesProj/jni/libwebp/ -name '*.in' -delete
-  find TMessagesProj/jni/libwebp/ -name '*.am' -delete
+  cp -r  3rdParty/unpacked/libwebp TMessagesProj/jni/libwebp
 }
 
 function handle_ffmpeg () {
@@ -113,8 +106,6 @@ function handle_ffmpeg () {
   cp -r libavcodec libavformat libavutil compat ../../../TMessagesProj/jni/ffmpeg
   cp COPYING* CREDITS LICENSE.md README.md Changelog ../../../TMessagesProj/jni/ffmpeg
   popd > /dev/null
-#  find TMessagesProj/jni/libwebp/ -name '*.in' -delete
-#  find TMessagesProj/jni/libwebp/ -name '*.am' -delete
 }
 
 function handle_openssl () {
