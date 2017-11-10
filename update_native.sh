@@ -3,11 +3,11 @@
 #fail on error
 set -e
 
-pkgnames=(   libwebp openssl sqlite-autoconf )
-pkgvers=(    0.4.2   1.0.2m  3210000 )
-extensions=( tar.gz  tar.gz  tar.gz )
-link=( "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/" "https://www.openssl.org/source/" "https://sqlite.org/2017/" )
-shasum=( skip skip d7dd516775005ad87a57f428b6f86afd206cb341722927f104d3f0cf65fbbbe3 )
+pkgnames=(   libwebp openssl sqlite-autoconf ffmpeg )
+pkgvers=(    0.4.2   1.0.2m  3210000         3.0 )
+extensions=( tar.gz  tar.gz  tar.gz          tar.xz )
+shasum=(     skip    skip    d7dd516775005ad87a57f428b6f86afd206cb341722927f104d3f0cf65fbbbe3 skip )
+link=(       "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/" "https://www.openssl.org/source/" "https://sqlite.org/2017/" "https://ffmpeg.org/releases/" )
 nopackages=${#pkgnames[@]}
 
 OPTIND=1
@@ -63,10 +63,15 @@ function download () {
 }
 
 function verify () {
+  # Try to verify gpg signature. Lacking that try to verify shasum
   echo "Verifying 3rdParty/download/$1"
   gpg --homedir "$g" --verify "3rdParty/download/$1.sig" 2> /dev/null \
     || gpg --homedir "$g" --verify "3rdParty/download/$1.asc" 2> /dev/null \
-    || if [ "$2" == "skip" ]; then true; else echo -e "$2\t3rdParty/download/$1" | sha256sum -c -; fi \
+    || { echo "No gpg signature for $1, trying shasum" \
+         && if [ "$2" == "skip" ]; then \
+              die "NO valid signature or hashsum provided."; \
+            else echo -e "$2\t3rdParty/download/$1" | sha256sum -c -; fi \
+        } \
     || die "INVALID signature/hash! Download corrupted? Has the signing key changed?"
 }
 
@@ -99,6 +104,17 @@ function handle_libwebp () {
   popd > /dev/null
   find TMessagesProj/jni/libwebp/ -name '*.in' -delete
   find TMessagesProj/jni/libwebp/ -name '*.am' -delete
+}
+
+function handle_ffmpeg () {
+  echo "Preparing ffmpeg source tree in TMessagesProj/jni/ffmpeg/"
+  rm -rf TMessagesProj/jni/ffmpeg/libav* TMessagesProj/jni/ffmpeg/compat
+  pushd 3rdParty/unpacked/ffmpeg > /dev/null
+  cp -r libavcodec libavformat libavutil compat ../../../TMessagesProj/jni/ffmpeg
+  cp COPYING* CREDITS LICENSE.md README.md Changelog ../../../TMessagesProj/jni/ffmpeg
+  popd > /dev/null
+#  find TMessagesProj/jni/libwebp/ -name '*.in' -delete
+#  find TMessagesProj/jni/libwebp/ -name '*.am' -delete
 }
 
 function handle_openssl () {
@@ -134,5 +150,6 @@ else
   handle_libwebp
   handle_openssl
   handle_sqlite
+  handle_ffmpeg
 fi
 popd > /dev/null
